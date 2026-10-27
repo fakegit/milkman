@@ -1,6 +1,10 @@
 package milkman.ui.plugin.rest;
 
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
 import javafx.application.Platform;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLSession;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
@@ -9,7 +13,11 @@ import milkman.domain.ResponseContainer.StyledText;
 import milkman.ui.main.dialogs.CredentialsInputDialog;
 import milkman.ui.main.options.CoreApplicationOptionsProvider;
 import milkman.ui.plugin.Templater;
+import milkman.ui.plugin.rest.tls.CertificateReader;
+import milkman.ui.plugin.rest.tls.CustomCertificateKeyManager;
+import milkman.ui.plugin.rest.tls.TrustAllTrustManager;
 import milkman.ui.plugin.rest.domain.*;
+//import milkman.ui.plugin.rest.http3.JettyHttp3Client;
 import milkman.utils.AsyncResponseControl.AsyncControl;
 import milkman.utils.json.BlockingFluxByteToStringConverter;
 import org.apache.commons.lang3.StringUtils;
@@ -19,7 +27,6 @@ import reactor.core.publisher.Flux;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URL;
@@ -71,7 +78,12 @@ public class JavaRequestProcessor implements RequestProcessor {
 	}
 
 	@SneakyThrows
-	private HttpClient buildClient() {
+	private HttpClient buildClient(RestRequestContainer request) {
+
+//		if (HttpOptionsPluginProvider.options().isHttp3Support()) {
+//			return new JettyHttp3Client();
+//		}
+
 		Builder builder = HttpClient.newBuilder();
 		if (!HttpOptionsPluginProvider.options().isHttp2Support()){
 			builder.version(Version.HTTP_1_1);
@@ -94,10 +106,21 @@ public class JavaRequestProcessor implements RequestProcessor {
 //			}
 		}
 
-		if (!HttpOptionsPluginProvider.options().isCertificateValidation()) {
-			disableSsl(builder);
+		if (StringUtils.isNotEmpty(request.getClientCertificate())) {
+			CertificateReader certReader = new CertificateReader();
+			milkman.ui.plugin.rest.tls.Certificate cert = HttpOptionsPluginProvider.options().getCertificates().stream()
+					.filter(c -> c.getName().equals(request.getClientCertificate()))
+					.findAny()
+					.orElseThrow(() -> new IllegalStateException("Certificate not found: " + request.getClientCertificate()));
+
+			var x509Certificate = certReader.readCertificate(cert);
+			var privateKey = certReader.readPrivateKey(cert);
+			configureSsl(builder, !HttpOptionsPluginProvider.options().isCertificateValidation(), x509Certificate, privateKey);
+		} else {
+			configureSsl(builder, !HttpOptionsPluginProvider.options().isCertificateValidation(), null, null);
 		}
-		
+
+
 		if (HttpOptionsPluginProvider.options().isFollowRedirects()) {
 			builder.followRedirects(Redirect.ALWAYS);
 		}
@@ -114,32 +137,31 @@ public class JavaRequestProcessor implements RequestProcessor {
 		builder.sslParameters(sslParameters);
 	}
 
-	private void disableSsl(Builder builder) {
+	private void configureSsl(Builder builder,
+			boolean disableSslVerification,
+			X509Certificate clientCertificate,
+			PrivateKey privateKey) {
 
-		// Create a trust manager that does not validate certificate chains
-		TrustManager[] trustAllCerts = {
-		    new X509TrustManager() {
-		        @Override
-				public X509Certificate[] getAcceptedIssuers() {
-		            return null;
-		        }
-		        @Override
-				public void checkClientTrusted(
-		            X509Certificate[] certs, String authType) {
-		        }
-		        @Override
-				public void checkServerTrusted(
-		            X509Certificate[] certs, String authType) {
-		        }
-		    }
-		};
+		TrustManager[] trustManagers = null;
+		if (disableSslVerification) {
+			// Create a trust manager that does not validate certificate chains
+			trustManagers = new TrustManager[]{
+					new TrustAllTrustManager()
+			};
+		}
 
-		// Install the all-trusting trust manager
+		KeyManager[] keyManagers = null;
+		if (privateKey != null && clientCertificate != null) {
+			 keyManagers =  new KeyManager[]{
+					 new CustomCertificateKeyManager(clientCertificate, privateKey)
+				};
+			};
+
 		try {
 		    SSLContext sc = SSLContext.getInstance("SSL");
-		    sc.init(null, trustAllCerts, new SecureRandom());
+		    sc.init(keyManagers, trustManagers, new SecureRandom());
 
-			builder.sslContext(sc);
+				builder.sslContext(sc);
 		} catch (Exception e) {
 			/* */
 		}
@@ -154,7 +176,7 @@ public class JavaRequestProcessor implements RequestProcessor {
 		AtomicLong startTime = new AtomicLong(System.currentTimeMillis());
 		
 		
-		var chReq = new ChunkedRequest(buildClient(), httpRequest);
+		var chReq = new ChunkedRequest(buildClient(request), httpRequest);
 		chReq.executeRequest(asyncControl.onCancellationRequested);
 		
 		//we block until we get the headers:
@@ -173,7 +195,7 @@ public class JavaRequestProcessor implements RequestProcessor {
 						var newRequest = toHttpRequest(request, templater);
 						startTime.set(System.currentTimeMillis());
 						//TODO i actually need a new flux here, no?
-						var proxyReq = new ChunkedRequest(buildClient(), newRequest);
+						var proxyReq = new ChunkedRequest(buildClient(request), newRequest);
 						proxyReq.executeRequest(asyncControl.onCancellationRequested);
 						responseHolder.set(proxyReq);
 					} catch (Exception e) {
@@ -204,6 +226,7 @@ public class JavaRequestProcessor implements RequestProcessor {
 		return toResponseContainer(httpRequest,
 																chReq.getEmitterProcessor(),
 																chReq.getResponseInfo(),
+																chReq.getSslSessionInfo(),
 																startTime);
 	}
 
@@ -256,8 +279,20 @@ public class JavaRequestProcessor implements RequestProcessor {
 	
 
 	@SneakyThrows
-	private RestResponseContainer toResponseContainer(HttpRequest request, Flux<byte[]> bodyPublisher, CompletableFuture<ResponseInfo> httpResponse, AtomicLong startTime) {
+	private RestResponseContainer toResponseContainer(HttpRequest request,
+			Flux<byte[]> bodyPublisher,
+			CompletableFuture<ResponseInfo> httpResponse,
+			CompletableFuture<Optional<SSLSession>> sslSessionInfo,
+			AtomicLong startTime) {
 		RestResponseContainer response = new RestResponseContainer(request.uri().toString());
+
+		bodyPublisher = tapContentLength(bodyPublisher, response);
+		bodyPublisher = bodyPublisher.doOnComplete(() -> {
+			response.getStatusInformations().add("Time", (System.currentTimeMillis() - startTime.get()) + "ms");
+//			response.getStatusInformations().complete();
+		});
+
+
 		response.getAspects().add(new RestResponseBodyAspect(bodyPublisher));
 
 		addDebugOutput(request, response);
@@ -275,13 +310,46 @@ public class JavaRequestProcessor implements RequestProcessor {
 		RestResponseHeaderAspect headers = new RestResponseHeaderAspect(entries.get());
 		
 		response.getAspects().add(headers);
-		
+
+
+		sslSessionInfo.thenAccept(ssl -> {
+          ssl.ifPresent(sslSession ->
+              response.getStatusInformations().add("SSL", getCertDetails(sslSession)));
+
+			//HACK: ssl information is propagated last by chunckedRequest, so we can complete the status information here
+			response.getStatusInformations().complete();
+        });
+
 		httpResponse.thenAccept(res -> {
 			var responseTimeInMs = System.currentTimeMillis() - startTime.get();
 			buildStatusView(res, response, responseTimeInMs);
 		});
-		
+
 		return response;
+	}
+
+	@SneakyThrows
+	private static Map<String, String> getCertDetails(SSLSession sslSession)  {
+		LinkedHashMap<String, String> result = new LinkedHashMap<>();
+		result.put("Protocol", sslSession.getProtocol());
+		Certificate cert = sslSession.getPeerCertificates()[0];
+		result.put("Certificate type", cert.getType());
+		if (cert instanceof X509Certificate) {
+			var x509 = (X509Certificate) sslSession.getPeerCertificates()[0];
+			result.put("Subject", x509.getSubjectX500Principal().getName());
+			result.put("Valid from", x509.getNotBefore().toInstant().toString());
+			result.put("Valid until", x509.getNotAfter().toInstant().toString());
+		}
+		return result;
+	}
+
+	private static Flux<byte[]> tapContentLength(Flux<byte[]> bodyPublisher, RestResponseContainer response) {
+		AtomicLong byteCount = new AtomicLong(0);
+		bodyPublisher = bodyPublisher.doOnNext(bytes -> {
+			var curByteCount = byteCount.addAndGet(bytes.length);
+			response.getStatusInformations().add("Details", Map.of("Size", "" + curByteCount));
+		});
+		return bodyPublisher;
 	}
 
 	private void addDebugOutput(HttpRequest request, RestResponseContainer response) {
@@ -304,18 +372,20 @@ public class JavaRequestProcessor implements RequestProcessor {
 	}
 
 	private void buildStatusView(ResponseInfo httpResponse, RestResponseContainer response, long responseTimeInMs) {
-		String versionStr = httpResponse.version().toString();
+		String versionStr = "undefined";
 		if (httpResponse.version() == Version.HTTP_1_1) {
 			versionStr = "1.1";
 		} else if (httpResponse.version() == Version.HTTP_2) {
 			versionStr = "2.0";
+		} else if (httpResponse.version() == null) { //special case for custom http_3 implementation
+			versionStr = "3.0";
 		}
-		LinkedHashMap<String, StyledText> statusKeys = new LinkedHashMap<>();
-		statusKeys.put("Status", new StyledText(""+httpResponse.statusCode(), getStyle(httpResponse.statusCode())));
-		statusKeys.put("Time", new StyledText(responseTimeInMs + "ms"));
-		statusKeys.put("Http", new StyledText(versionStr));
-		
-		response.getStatusInformations().complete(statusKeys);
+		response.getStatusInformations()
+				.add("Status", new StyledText(""+httpResponse.statusCode(), getStyle(httpResponse.statusCode())))
+				.add("Details", Map.of(
+						"TTFB", responseTimeInMs + "ms",
+						"Http", versionStr
+				));
 	}
 
 	private String getStyle(int statusCode) {

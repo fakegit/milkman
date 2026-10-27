@@ -31,6 +31,7 @@ import milkman.utils.fxml.GenericBinding;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.fxmisc.flowless.VirtualizedScrollPane;
+import org.fxmisc.richtext.Caret;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.LineNumberFactory;
 import org.fxmisc.richtext.model.StyleSpans;
@@ -113,6 +114,8 @@ public class ContentEditor extends VBox {
 
 	private void setupCodeArea() {
 		codeArea = new CodeArea();
+		//always show caret, even for non-editable
+		codeArea.setShowCaret(Caret.CaretVisibility.ON);
 //		codeArea.setWrapText(true);
 		setupParagraphGraphics();
 		EventStream<Object> highLightTrigger = EventStreams.merge(codeArea.multiPlainChanges(),
@@ -225,7 +228,7 @@ public class ContentEditor extends VBox {
 
 		format.setOnAction(e -> formatCurrentCode());
 
-		header = new HBox(new Label("Content Type:"), highlighters, format);
+		header = new HBox(new Label("Highlighting:"), highlighters, format);
 		header.getStyleClass().add("contentEditor-header");
 
 		getChildren().add(header);
@@ -302,7 +305,7 @@ public class ContentEditor extends VBox {
 		StopWatch s = new StopWatch();
 		s.start();
 		try {
-			if (getCurrentContenttypePlugin() != null && !shouldSkipHighlighting(text))
+			if (getCurrentContenttypePlugin() != null && !shouldSkipExpensiveOperations(text))
 				return getCurrentContenttypePlugin().computeHighlighting(text);
 			else
 				return noHighlight(text);
@@ -319,7 +322,7 @@ public class ContentEditor extends VBox {
 	 * @param text
 	 * @return
 	 */
-	private boolean shouldSkipHighlighting(String text) {
+	protected boolean shouldSkipExpensiveOperations(String text) {
 		/**
 		 * iterates over the string, counting the chars until next \n thereby.
 		 * If line is above max, it returns true
@@ -354,6 +357,14 @@ public class ContentEditor extends VBox {
 		codeArea.setEditable(editable);
 		if (editable){
 			setupAutoIndentation();
+		}
+	}
+
+	public void showLineNumbers(boolean showLineNumbers) {
+		if (showLineNumbers) {
+			setupParagraphGraphics();
+		} else {
+			codeArea.setParagraphGraphicFactory(null);
 		}
 	}
 

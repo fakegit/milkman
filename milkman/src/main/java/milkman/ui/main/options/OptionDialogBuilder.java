@@ -1,24 +1,28 @@
 package milkman.ui.main.options;
 
-import com.jfoenix.controls.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXComboBox;
+import com.jfoenix.controls.JFXPasswordField;
+import com.jfoenix.controls.JFXTextField;
+import com.jfoenix.controls.JFXToggleButton;
 import com.jfoenix.validation.IntegerValidator;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import lombok.RequiredArgsConstructor;
-import milkman.ui.components.JfxTableEditor;
+import milkman.ui.components.TableEditor;
 import milkman.utils.fxml.GenericBinding;
-
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 public class OptionDialogBuilder  {
 
@@ -33,6 +37,8 @@ public class OptionDialogBuilder  {
 				Map<String, Function<V, String>> columnValueProviders,
 				Supplier<V> newValueProvider,
 				Consumer<V> valueEditor);
+
+		<V> OptionListBuilder<T, V> list();
 
 		OptionPaneBuilder<T> selection(String name, Function<T, String> getter, BiConsumer<T, String> setter, List<String> possibleValues);
 		OptionSectionBuilder<T> endSection();
@@ -49,7 +55,7 @@ public class OptionDialogBuilder  {
 
 		private final String name;
 		private final T optionsObject;
-		private final List<Node> nodes = new LinkedList<Node>();
+		private final List<Node> nodes = new LinkedList<>();
 		private final List<GenericBinding<?, ?>> bindings = new LinkedList<>();
 
 		@Override
@@ -145,7 +151,7 @@ public class OptionDialogBuilder  {
 				List<String> possibleValues) {
 
 			Label lbl = new Label(name);
-			JFXComboBox<String> text = new JFXComboBox();
+			JFXComboBox<String> text = new JFXComboBox<>();
 			GenericBinding<T,String> binding = GenericBinding.of(getter, setter, optionsObject);
 			bindings.add(binding);
 			text.valueProperty().bindBidirectional(binding);
@@ -174,7 +180,7 @@ public class OptionDialogBuilder  {
 			for (int i = 0; i < items.size(); i++) {
 				zipWithIndex.add(new HashMap.SimpleEntry<>(i, items.get(i)));
 			}
-			JfxTableEditor<Entry<Integer, String>> table = new JfxTableEditor<>("options.list");
+			TableEditor<Entry<Integer, String>> table = new TableEditor<>("options.list");
 			table.addColumn("Script Url", Entry::getValue, (e, v) -> {
 				e.setValue(v);
 				items.set(e.getKey(), v);
@@ -195,14 +201,29 @@ public class OptionDialogBuilder  {
 				Consumer<V> valueEditor
 				) {
 			List<V> items = itemProvider.apply(optionsObject);
-			JfxTableEditor<V> table = new JfxTableEditor<>("options.generic.list");
+			TableEditor<V> table = new TableEditor<>("options.generic.list");
 			columnValueProviders.forEach(table::addReadOnlyColumn);
-			table.enableAddition(() -> {
-				V newValue = newValueProvider.get();
-				return newValue;
-			});
+			table.enableAddition(newValueProvider);
 			table.addDeleteColumn("remove", items::remove);
 			table.addCustomAction(FontAwesomeIcon.EDIT, valueEditor);
+			table.setItems(items);
+			nodes.add(table);
+			return this;
+		}
+
+		public <V> OptionListBuilder<T, V> list() {
+			return new OptionListBuilder<>(this);
+		}
+
+		<V> OptionPaneBuilder<T> list(OptionListBuilder<T, V> listBuilder) {
+			var items = listBuilder.itemProvider.apply(optionsObject);
+			var table = new TableEditor<V>("options.generic.list");
+			listBuilder.columnValueProviders.forEach(table::addReadOnlyColumn);
+			table.enableAddition(listBuilder.newValueProvider);
+			table.addDeleteColumn("remove", items::remove, listBuilder.changeListener);
+			if (listBuilder.valueEditor != null) {
+				table.addCustomAction(FontAwesomeIcon.EDIT, listBuilder.valueEditor);
+			}
 			table.setItems(items);
 			nodes.add(table);
 			return this;
@@ -211,7 +232,48 @@ public class OptionDialogBuilder  {
 	}
 
 	public <T> OptionSectionBuilder<T> page(String name, T optionBean){
-		return new OptionPageBuilder(name, optionBean);
+		return new OptionPageBuilder<>(name, optionBean);
+	}
+
+	@RequiredArgsConstructor
+	public static class OptionListBuilder<T, V> {
+
+		private final OptionPageBuilder<T> parent;
+
+		private Function<T, List<V>> itemProvider;
+		private Map<String, Function<V, String>> columnValueProviders;
+		private Supplier<V> newValueProvider;
+		private Consumer<V> valueEditor;
+		private VetoableListItemRemovalListener<V> changeListener;
+
+		public OptionListBuilder<T, V> itemProvider(Function<T, List<V>> itemProvider) {
+			this.itemProvider = itemProvider;
+			return this;
+		}
+
+		public OptionListBuilder<T, V> columnValueProviders(Map<String, Function<V, String>> columnValueProviders) {
+			this.columnValueProviders = columnValueProviders;
+			return this;
+		}
+
+		public OptionListBuilder<T, V> newValueProvider(Supplier<V> newValueProvider) {
+			this.newValueProvider = newValueProvider;
+			return this;
+		}
+
+		public OptionListBuilder<T, V> valueEditor(Consumer<V> valueEditor) {
+			this.valueEditor = valueEditor;
+			return this;
+		}
+
+		public OptionListBuilder<T, V> vetoableListChangeListener(VetoableListItemRemovalListener<V> changeListener) {
+			this.changeListener = changeListener;
+			return this;
+		}
+
+		public OptionPaneBuilder<T> endList() {
+			return parent.list(this);
+		}
 	}
 
 }

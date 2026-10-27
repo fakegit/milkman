@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.github.warmuuh</groupId>
 		<artifactId>milkman-parent</artifactId>
-		<version>5.6.0-SNAPSHOT</version>
+		<version>5.13.0</version>
 	</parent>
 	<artifactId>milkman-rest</artifactId>
 	<name>milkman-rest</name>
@@ -20,13 +20,13 @@
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-cli</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -80,6 +80,40 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-client</artifactId>
+			<version>12.0.16</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty.http2</groupId>
+			<artifactId>jetty-http2-client</artifactId>
+			<version>12.0.16</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty.http2</groupId>
+			<artifactId>jetty-http2-client-transport</artifactId>
+			<version>12.0.16</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.eclipse.jetty.http3</groupId>
+			<artifactId>jetty-http3-client-transport</artifactId>
+			<version>12.0.16</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty.http3</groupId>
+			<artifactId>jetty-http3-client</artifactId>
+			<version>12.0.16</version>
+		</dependency>
+
+<!--		<dependency>-->
+<!--			<groupId>org.eclipse.jetty.http3</groupId>-->
+<!--			<artifactId>http3-client</artifactId>-->
+<!--			<version>11.0.15</version>-->
+<!--		</dependency>-->
+
 	</dependencies>
 
 	<build>
@@ -88,7 +122,7 @@
 			<plugin>
 				<groupId>org.jsonschema2pojo</groupId>
 				<artifactId>jsonschema2pojo-maven-plugin</artifactId>
-				<version>1.0.1</version>
+				<version>1.2.1</version>
 				<configuration>
 					<sourceDirectory>${basedir}/src/main/schema</sourceDirectory>
 					<targetPackage>com.milkman.rest.postman.schema</targetPackage>
@@ -145,6 +179,17 @@
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
 					<appendAssemblyId>false</appendAssemblyId>
+					<archive>
+						<manifestSections>
+							<manifestSection>
+								<name>milkman.plugin</name>
+								<manifestEntries>
+									<Id>Milkman REST Plugin</Id>
+									<Author>warmuuh</Author>
+								</manifestEntries>
+							</manifestSection>
+						</manifestSections>
+					</archive>
 				</configuration>
 				<executions>
 					<execution>

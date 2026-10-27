@@ -1,33 +1,34 @@
 name: Release
 
-on: [repository_dispatch]
+on: [workflow_dispatch]
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/cache@v1
+    - uses: actions/cache@v4
       with:
         path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-
-    - name: Set up JDK 11
-      uses: joschi/setup-jdk@v2
+    - name: Set up JDK 25
+      uses: actions/setup-java@v2
       with:
-        java-version: openjdk11
+        distribution: liberica
+        java-version: 25
         architecture: x64
     - name: maven-settings-xml-action
       uses: whelk-io/maven-settings-xml-action@v4
       with:
         servers: '[{ "id": "github", "privateKey": "${{ secrets.DEPLOYMENT_KEY }}", "username": "${{ github.actor }}", "password": "${{ secrets.DEPLOYMENT_KEY }}" }]'
     - name: Maven stats
-      run: mvn -version
+      run: ./mvnw.cmd -version
     - name: Bump to release version
-      run: mvn --% -B org.codehaus.mojo:build-helper-maven-plugin:3.0.0:parse-version versions:set versions:commit -DnewVersion="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+      run: ./mvnw.cmd --% -B org.codehaus.mojo:build-helper-maven-plugin:3.0.0:parse-version versions:set versions:commit -DnewVersion="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
     - name: Package
-      run: mvn -B package -DexcludedGroups=ui
+      run: ./mvnw.cmd -B package -DexcludedGroups=ui
     - name: Commit files
       run: |
         git config --local user.email "action@github.com"
@@ -38,16 +39,16 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: create tag
-      run: mvn --% org.codehaus.mojo:exec-maven-plugin:1.6.0:exec -Dexec.executable="git" -Dexec.args="tag ${project.version}" -pl milkman
+      run: ./mvnw.cmd --% org.codehaus.mojo:exec-maven-plugin:1.6.0:exec -Dexec.executable="git" -Dexec.args="tag ${project.version}" -pl milkman
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
         tags: true
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Deploy
-      run: mvn -B deploy -DskipTests
+      run: ./mvnw.cmd -B deploy -DskipTests
     - name: Bump version to next dev version
-      run: mvn --% -B org.codehaus.mojo:build-helper-maven-plugin:3.0.0:parse-version versions:set versions:commit -DnewVersion="${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.0-SNAPSHOT"
+      run: ./mvnw.cmd --% -B org.codehaus.mojo:build-helper-maven-plugin:3.0.0:parse-version versions:set versions:commit -DnewVersion="${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.0-SNAPSHOT"
     - name: Commit files
       run: |
         git config --local user.email "action@github.com"
@@ -57,3 +58,50 @@ jobs:
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  update-tap:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Update Homebrew tap
+        env:
+          TAP_DEPLOY_KEY: ${{ secrets.TAP_DEPLOY_KEY }}
+        run: |
+          RELEASE=$(curl -s https://api.github.com/repos/warmuuh/milkman/releases/latest)
+          VERSION=$(echo "$RELEASE" | jq -r '.tag_name')
+          BASE_URL="https://github.com/warmuuh/milkman/releases/download/${VERSION}"
+
+          curl -sL "${BASE_URL}/milkman-dist-appbundle-macos64-bin.tgz" -o milkman-intel.tgz
+          curl -sL "${BASE_URL}/milkman-dist-appbundle-macos-aarch64-bin.tgz" -o milkman-arm64.tgz
+          INTEL_SHA256=$(sha256sum milkman-intel.tgz | cut -d' ' -f1)
+          ARM_SHA256=$(sha256sum milkman-arm64.tgz | cut -d' ' -f1)
+
+          mkdir -p ~/.ssh
+          echo "$TAP_DEPLOY_KEY" > ~/.ssh/tap_key
+          chmod 600 ~/.ssh/tap_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/tap_key -o IdentitiesOnly=yes"
+
+          git clone git@github.com:warmuuh/homebrew-milkman.git tap
+          # Expected Cask format (dual-arch, see docs.brew.sh/Cask-Cookbook):
+          #   cask "milkman" do
+          #     arch arm: "-aarch64", intel: "64"
+          #     version "..."
+          #     on_arm do
+          #       sha256 "<arm sha>"
+          #     end
+          #     on_intel do
+          #       sha256 "<intel sha>"
+          #     end
+          #     url "https://github.com/warmuuh/milkman/releases/download/#{version}/milkman-dist-appbundle-macos#{arch}-bin.tgz"
+          #     ...
+          #   end
+          sed -i -E "s|^([[:space:]]*version )\".*\"|\1\"${VERSION}\"|" tap/Casks/milkman.rb
+          sed -i -E "/on_arm do/,/^  end$/{s|sha256 \"[^\"]*\"|sha256 \"${ARM_SHA256}\"|}" tap/Casks/milkman.rb
+          sed -i -E "/on_intel do/,/^  end$/{s|sha256 \"[^\"]*\"|sha256 \"${INTEL_SHA256}\"|}" tap/Casks/milkman.rb
+          cd tap
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add Casks/milkman.rb
+          git commit -m "update milkman to ${VERSION}"
+          git push

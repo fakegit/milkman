@@ -2,6 +2,7 @@ package milkman.ctrl;
 
 import javafx.application.Platform;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import milkman.domain.Environment;
 import milkman.domain.RequestContainer;
@@ -32,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Singleton
+@Slf4j
 @RequiredArgsConstructor(onConstructor_={@Inject})
 public class ApplicationController {
 
@@ -46,9 +48,12 @@ public class ApplicationController {
 	private final Toaster toaster;
 
 	public void initApplication() {
+		long t = System.currentTimeMillis();
 		WorkbenchState state = persistence.loadWorkbenchState();
-		
 		List<String> names = persistence.loadWorkspaceNames();
+		log.debug("[startup] loadWorkbenchState + names: {} ms", System.currentTimeMillis() - t);
+
+		t = System.currentTimeMillis();
 		if (names.isEmpty()) {
 			createFreshWorkspace("New Workspace", true);
 		}
@@ -58,9 +63,13 @@ public class ApplicationController {
 			else
 				loadWorkspace(names.get(0));
 		}
-		
-		if (CoreApplicationOptionsProvider.options().isCheckForUpdates())
+		log.debug("[startup] load/create workspace: {} ms", System.currentTimeMillis() - t);
+
+		if (CoreApplicationOptionsProvider.options().isCheckForUpdates()) {
+			t = System.currentTimeMillis();
 			updateChecker.checkForUpdateAsync();
+			log.debug("[startup] checkForUpdateAsync: {} ms", System.currentTimeMillis() - t);
+		}
 	}
 
 
@@ -311,6 +320,16 @@ public class ApplicationController {
 
 
 	private void deleteWorkspace(String workspaceName) {
+		boolean isNotEmptyWs = persistence.loadWorkspaceByName(workspaceName)
+				.stream().anyMatch(ws -> !ws.getCollections().isEmpty());
+		if (isNotEmptyWs) {
+			var dialog = new ConfirmationInputDialog();
+			dialog.showAndWait("Confirm delete", "The workspace '" + workspaceName + "' contains requests. Are you sure you want to delete it?");
+			if (dialog.isCancelled()){
+				return;
+			}
+		}
+
 		persistence.deleteWorkspace(workspaceName);
 		if (workspaceController.getActiveWorkspace().getName().equals(workspaceName)) {
 			List<String> otherWorkspaces = persistence.loadWorkspaceNames();
@@ -319,6 +338,8 @@ public class ApplicationController {
 			} else {
 				loadWorkspace(otherWorkspaces.get(0));
 			}
+		} else {
+			toolbarComponent.setWorkspaces(workspaceController.getActiveWorkspace(), persistence.loadWorkspaceNames());
 		}
 	}
 
@@ -336,7 +357,7 @@ public class ApplicationController {
 	private void openWorkspaceManagementDialog() {
 		ManageWorkspacesDialog dialog = new ManageWorkspacesDialog();
 		dialog.onCommand.add(this::handleCommand);
-		dialog.showAndWait(persistence.loadWorkspaceNames());
+		dialog.showAndWait(persistence::loadWorkspaceNames);
 	}
 
 

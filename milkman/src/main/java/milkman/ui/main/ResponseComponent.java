@@ -1,19 +1,29 @@
 package milkman.ui.main;
 
 import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXPopup;
+import com.jfoenix.controls.JFXPopup.PopupVPosition;
 import com.jfoenix.controls.JFXTabPane;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import milkman.domain.RequestContainer;
-import milkman.domain.ResponseContainer.StyledText;
+import milkman.domain.StatusInfoContainer;
+import milkman.domain.StatusInfoContainer.StatusEntry;
 import milkman.ui.components.FancySpinner;
+import milkman.ui.components.StatusPopup;
 import milkman.ui.components.TinySpinner;
 import milkman.ui.main.options.CoreApplicationOptionsProvider;
 import milkman.ui.plugin.UiPluginManager;
@@ -21,9 +31,8 @@ import milkman.utils.AsyncResponseControl;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import milkman.utils.CollectionUtils;
 
 import static milkman.utils.fxml.FxmlBuilder.*;
 
@@ -87,20 +96,53 @@ public class ResponseComponent {
 	}
 
 
-	private void addStatusInformation(CompletableFuture<Map<String, StyledText>> statusInformations) {
+	private void addStatusInformation(StatusInfoContainer statusInformations) {
 		statusDisplay.getChildren().clear();
-		statusInformations.thenAccept(stats ->  Platform.runLater(() -> {
-			for (Entry<String, StyledText> entry : stats.entrySet()) {
-				Label name = new Label(entry.getKey() + ":");
-				Label value = new Label(entry.getValue().getText());
-				if (!CoreApplicationOptionsProvider.options().isDisableColorfulUi()) {
-					entry.getValue().getStyle().ifPresent(value::setStyle);
-				}
-				value.getStyleClass().add("emphasized");
-				statusDisplay.getChildren().add(new HBox(name, value));	
+		statusInformations.subscribe(entry ->  Platform.runLater(() -> {
+
+			int idx = CollectionUtils.indexOfFirst(statusDisplay.getChildren(), e -> entry.getKey().equals(e.getUserData()));
+			Optional<Node> existingNode = idx < 0 ? Optional.empty() : Optional.of(statusDisplay.getChildren().get(idx));
+			HBox node = renderStatusInfo(entry, existingNode);
+			node.setUserData(entry.getKey());
+
+			if (idx < 0) {
+				statusDisplay.getChildren().add(node);
+				FXCollections.sort(statusDisplay.getChildren(),
+						Comparator.comparing(n -> ((Parent)n).getChildrenUnmodifiable().size())
+								.thenComparing(n -> (Comparable)((Node)n).getUserData()));
+			} else {
+				statusDisplay.getChildren().set(idx, node);
 			}
 		}));
-		
+	}
+
+	private HBox renderStatusInfo(StatusEntry entry, Optional<Node> nodeToBeReplaced) {
+		if (entry.isGroup()) {
+			Label name = new Label(entry.getKey());
+			name.setUnderline(true);
+
+			Map<String, String> values = nodeToBeReplaced.map(n -> (Map<String, String>) ((HBox)n).getChildren().get(0).getUserData())
+							.orElse(new LinkedHashMap<>());
+			values.putAll(entry.getValueMap());
+			name.setUserData(values); //bit hacky: we store the key-map in this field to be able to merge later
+
+			HBox hBox = new HBox(name);
+			hBox.setStyle("-fx-cursor: hand");
+			hBox.setOnMouseClicked(e -> {
+				new StatusPopup(values)
+						.show(hBox);
+			});
+			return hBox;
+		} else {
+			Label name = new Label(entry.getKey() + ":");
+			Label value = new Label(entry.getValue().getText());
+			if (!CoreApplicationOptionsProvider.options().isDisableColorfulUi()) {
+				entry.getValue().getStyle().ifPresent(value::setStyle);
+			}
+			value.getStyleClass().add("emphasized");
+			HBox node = new HBox(name, value);
+			return node;
+		}
 	}
 
 	public void clear() {

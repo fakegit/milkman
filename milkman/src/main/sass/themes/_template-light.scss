@@ -43,6 +43,7 @@
 
 .options-page {
 	-fx-padding: 20;
+	-fx-background-color: white;
 	>.section-header {
 		-fx-text-fill: $main-accent;
 		-fx-font-size: 16;
@@ -56,6 +57,10 @@
 		>.label {
 			-fx-padding: 0 20 0 0;
 		}
+	}
+
+	.table-view {
+		-fx-min-height: 200px;
 	}
 }
 .options-tabs {
@@ -269,14 +274,22 @@
 	-jfx-button-type: RAISED;
 	-fx-border-width: 0 50 50 0;
 }
-.jfx-tree-table-view {
+.table-view {
+	.column-header, .column-header-background, .filler {
+		.label {
+			-fx-text-fill: $background;
+		}
+		-fx-border-width: 0 1 0 1;
+		-fx-border-color: darken($foreground, 10%);
+		-fx-background-color: $foreground;
+	}
 
-    .tree-table-row-cell:selected {
+    .table-row-cell:selected {
         -fx-background-color: $main-accent;
         -fx-table-cell-border-color: $main-accent;
     }
 
-	.tree-table-cell {
+	.table-cell {
 		-fx-border-width: 0 0 0 0;
 		-fx-pref-height: 32px;
 		-fx-alignment: center-left;
@@ -405,4 +418,18 @@
 
 .jfx-text-field > .input-focused-line {
     -fx-background-color: $main-accent;
+}
+
+.popover {
+	.text-field {
+		-fx-text-box-border: transparent;
+		-fx-border-width: 0;
+	}
+}
+
+.disabled {
+	-fx-background-color: lightgrey;
+	.content {
+		-fx-background-color: lightgrey;
+	}
 }

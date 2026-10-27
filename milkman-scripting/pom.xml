@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.github.warmuuh</groupId>
 		<artifactId>milkman-parent</artifactId>
-		<version>5.6.0-SNAPSHOT</version>
+		<version>5.13.0</version>
 	</parent>
 	<artifactId>milkman-scripting</artifactId>
 
@@ -15,9 +15,15 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.openjdk.nashorn</groupId>
+			<artifactId>nashorn-core</artifactId>
+			<version>15.4</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -64,6 +70,17 @@
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
 					<appendAssemblyId>false</appendAssemblyId>
+					<archive>
+						<manifestSections>
+							<manifestSection>
+								<name>milkman.plugin</name>
+								<manifestEntries>
+									<Id>Milkman Scripting Plugin</Id>
+									<Author>warmuuh</Author>
+								</manifestEntries>
+							</manifestSection>
+						</manifestSections>
+					</archive>
 				</configuration>
 				<executions>
 					<execution>

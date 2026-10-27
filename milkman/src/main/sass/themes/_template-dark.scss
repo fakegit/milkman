@@ -18,11 +18,12 @@
 #toolbar {
 	-fx-background-color: $main-accent;
 	.label {
-		-fx-text-fill: white;
-		-fx-text-fill: white;
+		-fx-text-fill: $foreground-alt;
 	}
 	.choice-box {
 		-fx-background-color: $secondary-accent;
+		-fx-text-fill: $foreground-alt;
+		-fx-mark-color: $foreground-alt;
 	}
 
     .context-menu {
@@ -31,7 +32,7 @@
             -fx-background-color: $secondary-accent;
 
             .label {
-                -fx-text-fill: $background;
+                -fx-text-fill: $foreground-alt;
                 -fx-font-weight: normal;
                 -fx-padding: 0 0 0 0;
             }
@@ -40,15 +41,14 @@
             -fx-background-color: darken($secondary-accent, 10%);
 
             .label {
-                -fx-text-fill: $background;
+                -fx-text-fill: $foreground-alt;
             }
         }
     }
 
     #syncButton {
         -fx-background-color: $secondary-accent;
-        -fx-text-fill: white;
-        -fx-text-fill: white;
+        -fx-text-fill: $foreground-alt;
         -fx-translate-y: 1;
         -fx-pref-height: 24px;
         -fx-min-height: -fx-pref-height;
@@ -56,11 +56,11 @@
     }
 
 	.jfx-button {
-		-fx-text-fill: white;
+		-fx-text-fill: $foreground-alt;
 		-fx-background-color: $secondary-accent;
 		-fx-translate-y: 1;
 		.icon {
-			-fx-fill: white;
+			-fx-fill: $foreground-alt;
 		}
 	}
 }
@@ -74,6 +74,8 @@
 }
 
 .options-page {
+	-fx-background-color: $background;
+	-fx-border-color: $background;
 	-fx-padding: 20;
 	>.section-header {
 		-fx-text-fill: $main-accent;
@@ -88,6 +90,10 @@
 		>.label {
 			-fx-padding: 0 20 0 0;
 		}
+	}
+
+	.table-view {
+		-fx-min-height: 200px;
 	}
 }
 .options-tabs {
@@ -210,6 +216,7 @@
 	-fx-prompt-text-fill: darken($foreground, 10%);
 	-jfx-focus-color: $main-accent;
 	-jfx-unfocus-color: darken($foreground, 10%);
+	-fx-text-fill: $foreground;
 }
 
 #generalRequestEdit {
@@ -234,6 +241,14 @@
 		-fx-text-fill: white;
 	}
 
+}
+.popover {
+	-fx-fill: $background;
+	-fx-text-fill: $foreground;
+	* {
+		-fx-background-color: $background;
+		-fx-text-fill: $foreground;
+	}
 }
 
 .jfx-popup-container {
@@ -409,16 +424,17 @@
 		-fx-fill: $foreground;
 	}
 }
-.jfx-tree-table-view {
+.table-view {
 	-fx-background-color: darken($background, 10%);
-	.column-header {
+	.column-header, .column-header-background, .filler {
 		.label {
 			-fx-text-fill: $foreground;
 		}
 		-fx-border-width: 0 1 0 1;
 		-fx-border-color: $foreground;
+		-fx-background-color: darken($background, 10%);
 	}
-	.tree-table-cell {
+	.table-cell {
 		-fx-border-width: 0 0 0 0;
 		-fx-pref-height: 32px;
 		-fx-alignment: center-left;
@@ -432,7 +448,7 @@
 	>.virtual-flow {
 		>.clipped-container {
 			>.sheet {
-				>.tree-table-row-cell {
+				>.table-row-cell {
 					-fx-background-color: darken($background, 10%);
 				}
 			}
@@ -442,11 +458,11 @@
 		>.virtual-flow {
 			>.clipped-container {
 				>.sheet {
-					>.tree-table-row-cell {
+					>.table-row-cell {
 						&:filled {
 							&:selected {
 								-fx-background-color: lighten($background, 10%);
-								-fx-table-cell-border-color: -fx-tree-table-color;
+								-fx-table-cell-border-color: -fx-table-color;
 								-fx-text-fill: white;
 							}
 						}
@@ -454,16 +470,16 @@
 				}
 			}
 		}
-		.tree-table-row-cell {
+		.table-row-cell {
 			&:selected {
-				.tree-table-cell {
+				.table-cell {
 					-fx-text-fill: white;
 				}
 			}
 		}
 	}
-	.tree-table-row-cell {
-		.tree-table-cell {
+	.table-row-cell {
+		.table-cell {
 			-fx-text-fill: $foreground;
 		}
 	}
@@ -487,6 +503,10 @@
 	.code-area {
 		-fx-text-fill: $foreground;
 		-fx-background-color: darken($background, 10%);
+
+		.caret {
+			-fx-stroke: $foreground;
+		}
 	}
 	.list-cell {
 		-fx-text-fill: $foreground;
@@ -543,6 +563,14 @@
             -fx-text-fill: $foreground;
         }
     }
+
+	.scroll-pane {
+		-fx-background-color: $background;
+		-fx-background: $background;
+		.viewport {
+			-fx-background-color: transparent;
+		}
+	}
 }
 .spinner {
 	-fx-background-color: $background;
@@ -716,4 +744,26 @@
 }
 .popup-title {
 	-fx-font-weight: BOLD;
+}
+
+.disabled {
+	-fx-background-color: rgb(96,96,96);
+	.content {
+		-fx-background-color: rgb(96,96,96);
+	}
+}
+
+.list-view {
+	-fx-background-color: $background;
+}
+
+.list-cell {
+	-fx-text-fill: white !important;
+	-fx-background-color: $background;
+
+
+}
+
+.list-cell:selected {
+	-fx-background-color: lighten($background, 20%);
 }

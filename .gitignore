@@ -10,3 +10,10 @@ errors.log
 *.iml
 *.log
 .vscode/
+/.run
+/.sdkmanrc
+/.automaker/
+.mvn/dev-*
+!.mvn/dev-settings.xml
+.mvn/wrapper/maven-wrapper.jar
+.mise.local.toml

@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.github.warmuuh</groupId>
 		<artifactId>milkman-parent</artifactId>
-		<version>5.6.0-SNAPSHOT</version>
+		<version>5.13.0</version>
 	</parent>
 	<artifactId>milkman-grpc</artifactId>
 
@@ -17,10 +17,18 @@
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 			<scope>provided</scope>
 		</dependency>
-		
+
+		<!-- only for insomnia-import. if not provided, it doesnt hurt -->
+		<dependency>
+			<groupId>com.github.warmuuh</groupId>
+			<artifactId>milkman-rest</artifactId>
+			<version>5.13.0</version>
+			<scope>provided</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-netty</artifactId>
@@ -44,9 +52,9 @@
 
 		
 		<dependency>
-			<groupId>com.github.os72</groupId>
+			<groupId>io.github.minhhoangvn</groupId>
 			<artifactId>protoc-jar</artifactId>
-			<version>3.8.0</version>
+			<version>3.21.4</version>
 		</dependency>
 	</dependencies>
 
@@ -60,6 +68,17 @@
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
 					<appendAssemblyId>false</appendAssemblyId>
+					<archive>
+						<manifestSections>
+							<manifestSection>
+								<name>milkman.plugin</name>
+								<manifestEntries>
+									<Id>Milkman GRPC Plugin</Id>
+									<Author>warmuuh</Author>
+								</manifestEntries>
+							</manifestSection>
+						</manifestSections>
+					</archive>
 				</configuration>
 				<executions>
 					<execution>

@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.PathItem.HttpMethod;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
+import java.util.Objects;
 import lombok.Value;
 import milkman.domain.Collection;
 import milkman.domain.Environment;
@@ -16,6 +17,7 @@ import milkman.ui.plugin.rest.domain.HeaderEntry;
 import milkman.ui.plugin.rest.domain.RestBodyAspect;
 import milkman.ui.plugin.rest.domain.RestHeaderAspect;
 import milkman.ui.plugin.rest.domain.RestRequestContainer;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
@@ -94,7 +96,9 @@ public class OpenapiImporterV30 {
         }
 
 
-        RestRequestContainer container = new RestRequestContainer(operation.getOperationId(), host + path + qryStr, method.name());
+        String requestName = ObjectUtils.firstNonNull(operation.getOperationId(), operation.getSummary(), path);
+        
+        RestRequestContainer container = new RestRequestContainer(requestName, host + path + qryStr, method.name());
 
 
 

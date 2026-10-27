@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.github.warmuuh</groupId>
 		<artifactId>milkman-parent</artifactId>
-		<version>5.6.0-SNAPSHOT</version>
+		<version>5.13.0</version>
 	</parent>
 	<artifactId>milkman-dist</artifactId>
 
@@ -17,94 +17,115 @@
 
 	<properties>
 		<maven.deploy.skip>true</maven.deploy.skip>
-		<jdk.version>11.0.17+7</jdk.version>
+		<jdk.version>25.0.4.1+1</jdk.version>
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-sync-git</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-cli</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-note</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-jdbc</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.warmuuh</groupId>
+			<artifactId>milkman-mcp</artifactId>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-cassandra</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-rest</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-ws</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.hsqldb</groupId>
 			<artifactId>hsqldb</artifactId>
 			<version>2.4.1</version>
 		</dependency>
-
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-scripting</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-explore</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-privatebin</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-graphql</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-grpc</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-test</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-auth</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.warmuuh</groupId>
 			<artifactId>milkman-sio</artifactId>
-			<version>5.6.0-SNAPSHOT</version>
+			<version>5.13.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.warmuuh</groupId>
+			<artifactId>milkman-nosql</artifactId>
+			<version>5.13.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.warmuuh</groupId>
+			<artifactId>milkman-plugins-management</artifactId>
+			<version>5.13.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.reflections</groupId>
+			<artifactId>reflections</artifactId>
+			<version>0.10.2</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
@@ -113,7 +134,7 @@
 			<plugin>
 				<groupId>com.akathist.maven.plugins.launch4j</groupId>
 				<artifactId>launch4j-maven-plugin</artifactId>
-				<version>1.7.25</version>
+				<version>2.4.1</version>
 				<executions>
 					<execution>
 						<id>l4j-clui</id>
@@ -133,27 +154,25 @@
 							</classPath>
 							<jre>
 								<path>.\jre-win64\</path>
-								<!-- <minVersion>11</minVersion> -->
-								<!-- <maxVersion>1.9.0</maxVersion> -->
+								<!-- launch4j can't do conditional AOTCache selection like milkman.bat does;
+								     users wanting a warm cache should launch via milkman.bat at least once. -->
 								<opts>
-									<opt>-XX:SharedArchiveFile=app-cds.jsa</opt>
-									<opt>-client</opt>
+									<opt>-Xmx2G</opt>
 									<opt>-XX:+UseCompressedOops</opt>
-									<opt>-XX:+UseCompressedClassPointers</opt>
-<!-- 									<opt>-Xlog:class+load:file=cds3.log</opt> -->
-									<!-- <opt>-Djava.endorsed.dirs=./endorsed</opt> --><!-- not yet supported with modules -->
 									<opt><![CDATA[--add-exports javafx.controls/com.sun.javafx.scene.control.behavior=ALL-UNNAMED]]></opt>
 									<opt><![CDATA[--add-exports javafx.controls/com.sun.javafx.scene.control=ALL-UNNAMED]]></opt>
 									<opt><![CDATA[--add-exports javafx.controls/com.sun.javafx.scene.control.skin=ALL-UNNAMED]]></opt>
 									<opt><![CDATA[--add-exports javafx.graphics/com.sun.javafx.scene=ALL-UNNAMED]]></opt>
 									<opt><![CDATA[--add-exports javafx.graphics/com.sun.javafx.scene.text=ALL-UNNAMED]]></opt>
 									<opt><![CDATA[--add-exports javafx.graphics/com.sun.javafx.geom=ALL-UNNAMED]]></opt>
+									<opt><![CDATA[--add-exports javafx.graphics/com.sun.glass.ui=ALL-UNNAMED]]></opt>
 									<opt><![CDATA[--add-exports javafx.base/com.sun.javafx.event=ALL-UNNAMED]]></opt>
 									<opt><![CDATA[--add-opens javafx.controls/javafx.scene.control.skin=ALL-UNNAMED]]></opt>
 									<opt><![CDATA[--add-opens javafx.controls/javafx.scene.control=ALL-UNNAMED]]></opt>
 									<opt><![CDATA[--add-opens javafx.graphics/javafx.scene=ALL-UNNAMED]]></opt>
 									<opt><![CDATA[--add-opens javafx.graphics/javafx.scene.text=ALL-UNNAMED]]></opt>
 									<opt><![CDATA[--add-opens javafx.graphics/com.sun.javafx.text=ALL-UNNAMED]]></opt>
+									<opt><![CDATA[--add-opens java.base/java.lang.reflect=ALL-UNNAMED]]></opt>
 									<opt>-Dprism.dirtyopts=false</opt>
 								</opts>
 							</jre>
@@ -196,9 +215,9 @@
 				<!--<groupId>com.igormaznitsa</groupId>
 				<artifactId>mvn-jlink-wrapper</artifactId>
 				<version>1.0.4</version>-->
-				<groupId>com.github.warmuuh.mvn-jlink</groupId>
+				<groupId>com.igormaznitsa</groupId>
 				<artifactId>mvn-jlink-wrapper</artifactId>
-				<version>1.0.5</version>
+				<version>1.2.6</version>
 				<configuration>
 					<!-- <modulePath>${env.JAVAFX_MODS}</modulePath> -->
 					<addModules>
@@ -220,15 +239,18 @@
 						<addModule>jdk.unsupported.desktop</addModule>
 						<addModule>jdk.xml.dom</addModule>
 						<addModule>javafx.controls</addModule>
-						<addModule>jdk.scripting.nashorn</addModule>
 						<addModule>java.security.jgss</addModule>
 						<addModule>jdk.httpserver</addModule>
+						<addModule>jdk.dynalink</addModule>
 					</addModules>
 					<options>
-						<option>--compress=2</option>
+						<option>--compress=zip-6</option>
 						<option>--no-header-files</option>
 						<option>--no-man-pages</option>
-						<option>--vm=client</option>
+<!--						breaks cross-platform compilation: -->
+<!--						<option>&#45;&#45;generate-cds-archive</option>-->
+<!--						&#45;&#45;vm omitted so jlink defaults to all VMs. -->
+<!--						&#45;&#45;vm=client previously dropped the Server VM (C2) and halved startup speed. -->
 					</options>
 					<output/>
 					<tool/>
@@ -283,6 +305,24 @@
 							<providerConfig>
 								<version>${jdk.version}</version>
 								<arch>amd64-full</arch>
+								<type>jdk</type>
+								<os>macos</os>
+							</providerConfig>
+						</configuration>
+					</execution>
+					<execution>
+						<id>call-jlink-macos-aarch64</id>
+						<goals>
+							<goal>jlink</goal>
+						</goals>
+						<phase>package</phase>
+						<configuration>
+							<output>${project.build.directory}${file.separator}jre-macos-aarch64</output>
+
+							<provider>BELLSOFT</provider><!-- liberica contains javafx -->
+							<providerConfig>
+								<version>${jdk.version}</version>
+								<arch>aarch64-full</arch>
 								<type>jdk</type>
 								<os>macos</os>
 							</providerConfig>
@@ -350,6 +390,34 @@
 						</configuration>
 					</execution>
 					<execution>
+						<id>distro-assembly-macos-aarch64</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<tarLongFileMode>posix</tarLongFileMode>
+							<finalName>${project.artifactId}-macos-aarch64</finalName>
+							<descriptors>
+								<descriptor>src/assembly/bin-macos-aarch64.xml</descriptor>
+							</descriptors>
+						</configuration>
+					</execution>
+					<execution>
+						<id>distro-assembly-macos-aarch64-bundle</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<tarLongFileMode>posix</tarLongFileMode>
+							<finalName>${project.artifactId}-appbundle-macos-aarch64</finalName>
+							<descriptors>
+								<descriptor>src/assembly/bundle-macos-aarch64.xml</descriptor>
+							</descriptors>
+						</configuration>
+					</execution>
+					<execution>
 						<id>plugin-assembly</id>
 						<phase>package</phase>
 						<goals>
@@ -362,7 +430,20 @@
 							</descriptors>
 						</configuration>
 					</execution>
-						<execution>
+					<execution>
+						<id>plugin-jars-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<finalName>plugin-jars</finalName>
+							<descriptors>
+								<descriptor>src/assembly/plugins-jars.xml</descriptor>
+							</descriptors>
+						</configuration>
+					</execution>
+					<execution>
 						<id>assembly-cli</id>
 						<phase>package</phase>
 						<goals>
@@ -405,6 +486,12 @@
 							<excludes>
 								<exclude>${project.artifactId}*.jar</exclude>
 							</excludes>
+						</fileSet>
+						<fileSet>
+							<directory>${project.build.directory}/plugin-jars-bin</directory>
+							<includes>
+								<include>*.jar</include>
+							</includes>
 						</fileSet>
 					</fileSets>
 

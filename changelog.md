@@ -1,11 +1,53 @@
 # Changelog
 
-version 5.6.0 -- upcoming (nightly)
+version 5.13.0 - upcoming:
+  * added support for custom parameters to oauth2 credentials
+  * upgraded to java 25
+  * upgraded [MCP plugin](/milkman-mcp) to MCP Java SDK 2.1.0
+  * reduced cold-start time (~2.0s → ~0.7s) via launch-script AOTCache and startup code fixes
+  * added native macOS Apple Silicon (arm64) distribution — previously only an x86_64 bundle was shipped, forcing Rosetta
+  * bundled runtimes now include the Server VM (C2) across all platforms, improving warm startup
+
+version 5.12.0:
+  * upgraded reactor to 3.7.0
+  * added [MCP plugin](/milkman-mcp)
+
+version 5.11.0
+  * fixing display bugs in tables ([#197](https://github.com/warmuuh/milkman/issues/197))
+
+version 5.10.0
+  * upgraded to java 21
+  * upgraded to javafx 21
+  * fixed app-cds setup for startup optimization
+  * added new http-client `Jetty (experimental)` which supports socks5 proxy now
+
+version 5.9.0
+  * added [marketplace](/milkman-plugins-management#marketplace) for plugins
+  * improved CURL importer
+
+version 5.8.0
+  * base64 keytype
+  * Oauth: Authentication Grant flow now supports choosing port for return url
+  * extended information on http responses (ssl certificate, body size etc)
+  * support for client certificate (for testing mTls)
+  * new [Plugin management](/milkman-plugins-management) plugin - many thanks to @lopitz
+    * checkout [new themes](https://github.com/lopitz/milkman-themes) from @lopitz as well
+
+version 5.7.0
+  * minor UI fixes
+  * Http/3 protocol support (experimental)
+  * improving drawing-performance for big json responses
+  * using java 17
+  * new [NoSql](/milkman-nosql) plugin, supporting all nosql DBs via [JNoSql](https://github.com/eclipse/jnosql)
+  * Insomnia Import (due to [recent events](https://github.com/Kong/insomnia/issues/6577))
+
+version 5.6.0
   * code templates (see [Features](/docs/features.md))
   * some predefined exporters for
     * Spring RestTemplate
     * Spring Webclient
   * added auto-issuing of oauth2 tokens, when necessary (e.g. no refresh token or refresh failed)
+  * SOCKS proxy support for jdbc (if the driver supports it) and cassandra
 
 version 5.5.0
 

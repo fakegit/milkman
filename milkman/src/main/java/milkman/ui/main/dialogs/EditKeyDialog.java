@@ -1,8 +1,11 @@
 package milkman.ui.main.dialogs;
 
 import com.jfoenix.controls.JFXDialogLayout;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.ScrollPane;
+import javafx.stage.Screen;
 import milkman.domain.KeySet.KeyEntry;
 import milkman.ui.plugin.KeyEditor;
 import milkman.utils.fxml.FxmlUtil;
@@ -32,7 +35,19 @@ public class EditKeyDialog {
 	public static class EditKeyDialogFxml extends JFXDialogLayout {
 		public EditKeyDialogFxml(EditKeyDialog controller, Node body){
 			setHeading(label("Edit Key"));
-			setBody(body);
+
+			ScrollPane scroll = new ScrollPane(body);
+			scroll.setFitToWidth(true);
+			scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+			scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+			scroll.setPadding(Insets.EMPTY);
+            scroll.setPrefWidth(650);
+            scroll.setMinWidth(650);
+			double maxH = Screen.getPrimary().getVisualBounds().getHeight() * 0.60;
+			scroll.setMaxHeight(maxH);
+
+
+			setBody(scroll);
 			setActions(submit(controller::onSave));
 		}
 	}
